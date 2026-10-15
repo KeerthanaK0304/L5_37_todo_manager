@@ -1,4 +1,6 @@
 
+"""A simple command-line todo manager."""
+
 import json
 from datetime import datetime
 
@@ -6,50 +8,70 @@ tasks = {}
 PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 
 
-def addTask(title, priority="medium", labels=[]):
-    taskId = len(tasks) + 1
+def add_task(title, priority="medium", labels=None):
+    """Add a task and return its ID."""
+    if labels is None:
+        labels = []
+
+    task_id = max(tasks.keys(), default=0) + 1
+    labels = list(labels)
     labels.append(priority)
-    tasks[taskId] = {
+
+    tasks[task_id] = {
         "title": title,
         "priority": priority,
+        "labels": labels,
         "done": False,
-        "created": datetime.now().isoformat()
+        "created": datetime.now().isoformat(),
     }
-    return taskId
+    return task_id
 
 
-def completeTask(taskId):
-    if taskId in tasks:
-        tasks[taskId]["done"] = True
+def complete_task(task_id):
+    """Mark a task as completed."""
+    if task_id in tasks:
+        tasks[task_id]["done"] = True
         return True
-    print("No task with id", taskId)
+
+    print("No task with id", task_id)
     return False
 
 
-def pendingTasks():
+def pending_tasks():
+    """Return pending task titles sorted by priority."""
     pending = [
-        task for task in tasks.values() if not task["done"]
+        task for task in tasks.values()
+        if not task["done"]
     ]
     pending.sort(
-        key=lambda task: PRIORITY_ORDER[task["priority"]]
+        key=lambda task: PRIORITY_ORDER.get(
+            task["priority"], 3
+        )
     )
     return [task["title"] for task in pending]
 
 
-def findTask(keyword):
-    for taskId, task in tasks.items():
+def find_task(keyword):
+    """Find a task by keyword and return its ID."""
+    for task_id, task in tasks.items():
         if keyword.lower() in task["title"].lower():
-            return taskId
+            return task_id
+    return None
 
 
-def saveTasks(fileName="tasks.json"):
-    with open(fileName, "w", encoding="utf-8") as file:
+def save_tasks(file_name="tasks.json"):
+    """Save all tasks to a JSON file."""
+    with open(file_name, "w", encoding="utf-8") as file:
         json.dump(tasks, file, indent=2)
 
 
-def loadTasks(fileName="tasks.json"):
-    with open(fileName, "r", encoding="utf-8") as file:
-        loaded_tasks = json.load(file)
+def load_tasks(file_name="tasks.json"):
+    """Load tasks from a JSON file."""
+    try:
+        with open(file_name, "r", encoding="utf-8") as file:
+            loaded_tasks = json.load(file)
+    except FileNotFoundError:
+        return {}
 
     return {
         int(task_id): task
@@ -57,33 +79,37 @@ def loadTasks(fileName="tasks.json"):
     }
 
 
-def exportJson(fileName="tasks.json"):
-    with open(fileName, "w", encoding="utf-8") as file:
+def export_json(file_name="tasks_export.json"):
+    """Export tasks to a JSON file."""
+    with open(file_name, "w", encoding="utf-8") as file:
         json.dump(tasks, file, indent=2)
 
 
 def main():
-    addTask("Submit lab report", "high")
-    addTask("Buy groceries")
-    addTask("Call plumber", "low")
-    addTask("Book train tickets", "high")
+    """Run a small demonstration of the todo manager."""
+    add_task("Submit lab report", "high")
+    add_task("Buy groceries")
+    add_task("Call plumber", "low")
+    add_task("Book train tickets", "high")
 
-    completeTask(2)
-    completeTask(99)
+    complete_task(2)
+    complete_task(99)
 
-    print("Pending tasks:", pendingTasks())
-    print("Task id for 'plumber':", findTask("plumber"))
-    print("Task id for 'gym':", findTask("gym"))
+    print("Pending tasks:", pending_tasks())
+    print("Task id for 'plumber':", find_task("plumber"))
+    print("Task id for 'gym':", find_task("gym"))
 
-    pending = pendingTasks()
+    pending = pending_tasks()
     suggestion = pending[0] if pending else "No pending tasks"
     print("Try this next:", suggestion)
 
-    saveTasks()
-    restored = loadTasks()
+    save_tasks()
+    restored = load_tasks()
     print("Tasks restored from file:", len(restored))
-    exportJson()
-    print("Exported tasks to tasks.json")
+
+    export_json()
+    print("Exported tasks to tasks_export.json")
 
 
-main()
+if __name__ == "__main__":
+    main()
